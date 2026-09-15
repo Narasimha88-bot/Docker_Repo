@@ -6,7 +6,7 @@ pipeline {
     stages {
         stage('checkout the code') {
             steps {
-                git branch: 'main', url: https://github.com/Narasimha88-bot/Docker_Repo '
+                git branch: 'main', url: 'https://github.com/Narasimha88-bot/Docker_Repo'
             }
         }
         stage('package the build'){
