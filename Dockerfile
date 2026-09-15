@@ -9,7 +9,7 @@ RUN rm -rf webapps/*
 
 # Copy your WAR file from Jenkins workspace into Tomcat webapps
 # Replace *.war with the actual WAR filename (e.g., docker_test.war)
-COPY /home/ubuntu/workspace/docker_test/target/*.war /usr/local/tomcat/webapps/app.war
+COPY target/*.war /usr/local/tomcat/webapps/app.war
 
 # Expose Tomcat default port
 EXPOSE 8080
