@@ -17,7 +17,7 @@ pipeline {
         }
        stage('Build Docker Image') {
     steps {
-        sh 'docker build -t my-app .'
+        sh 'sudo docker build -t my-app .'
          }
     }
         
@@ -25,10 +25,10 @@ pipeline {
             steps {
                 sh '''
                 # Stop and remove old container if exists
-                docker rm -f my-app-container || true
+                sudo docker rm -f my-app-container || true
 
                 # Run new container
-                docker run -d -p 8080:8080 --name my-app-container my-app
+               sudo docker run -d -p 8080:8080 --name my-app-container my-app
                 '''
             }
         }
