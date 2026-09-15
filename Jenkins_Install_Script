@@ -1,0 +1,84 @@
+#!/bin/bash
+set -e
+
+echo "=================================="
+echo "   Jenkins Installation Script"
+echo "=================================="
+
+# Remove any old Jenkins repo (avoid GPG errors)
+sudo rm -f /etc/apt/sources.list.d/jenkins.list 2>/dev/null || true
+
+echo "Updating packages..."
+sudo apt update -y
+
+echo "Installing OpenJDK 21..."
+sudo apt install -y openjdk-21-jdk wget curl
+
+java -version
+
+echo "Preparing directories..."
+sudo mkdir -p /opt/jenkins
+sudo mkdir -p /var/lib/jenkins
+
+echo "Downloading Jenkins..."
+cd /opt/jenkins
+sudo wget -q https://get.jenkins.io/war-stable/latest/jenkins.war
+
+echo "Creating Jenkins user if not exists..."
+if ! id "jenkins" &>/dev/null; then
+    sudo useradd -m -d /var/lib/jenkins -s /bin/bash jenkins
+fi
+
+sudo chown -R jenkins:jenkins /opt/jenkins /var/lib/jenkins
+
+echo "Creating systemd service..."
+
+sudo tee /etc/systemd/system/jenkins.service > /dev/null <<EOF
+[Unit]
+Description=Jenkins
+After=network.target
+
+[Service]
+User=jenkins
+Environment="JENKINS_HOME=/var/lib/jenkins"
+ExecStart=/usr/bin/java -jar /opt/jenkins/jenkins.war --httpPort=8080
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "Reloading systemd..."
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+
+echo "Starting Jenkins..."
+sudo systemctl enable jenkins
+sudo systemctl start jenkins
+
+echo "Waiting for Jenkins to initialize..."
+
+for i in {1..90}; do
+    if sudo test -f /var/lib/jenkins/secrets/initialAdminPassword; then
+        break
+    fi
+    sleep 2
+done
+
+echo "=================================="
+echo " Jenkins Installed Successfully"
+echo "=================================="
+
+PUBLIC_IP=$(curl -s ifconfig.me || echo "SERVER_IP")
+
+echo "Access Jenkins at:"
+echo "http://$PUBLIC_IP:8080"
+
+echo ""
+echo "Initial Admin Password:"
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword || \
+echo "Password not ready yet — wait 30 seconds and retry."
+
+echo "Done!"
+

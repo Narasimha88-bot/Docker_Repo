@@ -1,0 +1,73 @@
+#!/bin/bash
+set -e
+
+TOMCAT_VERSION="$1"
+
+if [ -z "$TOMCAT_VERSION" ]; then
+  echo "Usage: $0 <TOMCAT_VERSION>"
+  exit 1
+fi
+
+MAJOR_VERSION=$(echo $TOMCAT_VERSION | cut -d. -f1)
+TOMCAT_USER="ubuntu"
+TOMCAT_DIR="/opt/tomcat/tomcat-${MAJOR_VERSION}"
+TMP_DIR="/tmp/tomcat-install"
+
+echo "Updating system..."
+sudo apt update -y
+sudo apt install -y wget tar openjdk-17-jdk
+
+JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:/bin/java::")
+
+echo "Preparing temp directory..."
+rm -rf $TMP_DIR
+mkdir -p $TMP_DIR
+cd $TMP_DIR
+
+TOMCAT_ARCHIVE="apache-tomcat-${TOMCAT_VERSION}.tar.gz"
+TOMCAT_URL="https://archive.apache.org/dist/tomcat/tomcat-${MAJOR_VERSION}/v${TOMCAT_VERSION}/bin/${TOMCAT_ARCHIVE}"
+
+echo "Downloading from:"
+echo $TOMCAT_URL
+
+wget -O $TOMCAT_ARCHIVE $TOMCAT_URL
+
+echo "Installing Tomcat..."
+sudo rm -rf $TOMCAT_DIR
+sudo mkdir -p $TOMCAT_DIR
+
+sudo tar -xzf $TOMCAT_ARCHIVE -C $TOMCAT_DIR --strip-components=1
+
+echo "Creating tomcat user..."
+if ! id "$TOMCAT_USER" &>/dev/null; then
+  sudo useradd -r -m -U -d $TOMCAT_DIR -s /bin/false $TOMCAT_USER
+fi
+
+sudo chown -R $TOMCAT_USER:$TOMCAT_USER $TOMCAT_DIR
+sudo chmod -R 750 $TOMCAT_DIR
+
+echo "Creating service..."
+sudo tee /etc/systemd/system/tomcat.service > /dev/null <<EOF
+[Unit]
+Description=Apache Tomcat
+After=network.target
+
+[Service]
+Type=forking
+User=$TOMCAT_USER
+Group=$TOMCAT_USER
+Environment=JAVA_HOME=$JAVA_HOME
+Environment=CATALINA_HOME=$TOMCAT_DIR
+ExecStart=$TOMCAT_DIR/bin/startup.sh
+ExecStop=$TOMCAT_DIR/bin/shutdown.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable tomcat
+sudo systemctl start tomcat
+
+echo "Tomcat installed successfully."
