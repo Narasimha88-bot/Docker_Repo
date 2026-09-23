@@ -15,6 +15,14 @@ pipeline {
                 sh 'mvn clean package -DskipTests'
             }
         }
+        stage('Prepare WAR') {
+    steps {
+        sh '''
+        LATEST_WAR=$(ls -t target/*.war | head -1)
+        sudo cp "$LATEST_WAR" target/app.war
+        '''
+    }
+}
        stage('Build Docker Image') {
     steps {
         sh 'sudo docker build -t my-app .'
@@ -28,7 +36,7 @@ pipeline {
                 sudo docker rm -f my-app-container || true
 
                 # Run new container
-               sudo docker run -d -p 8080:8080 --name my-app-container my-app
+               sudo docker run -d -p 8081:8080 --name my-app-container my-app
                 '''
             }
         }
