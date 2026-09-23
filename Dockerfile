@@ -1,5 +1,5 @@
 # Use official Tomcat base image
-FROM tomcat:9.0-jdk17-openjdk
+FROM tomcat:9.0-jdk21-openjdk
 
 # Set working directory inside container
 WORKDIR /usr/local/tomcat
