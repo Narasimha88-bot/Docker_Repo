@@ -15,28 +15,34 @@ pipeline {
                 sh 'mvn clean package -DskipTests'
             }
         }
-        stage('Prepare WAR') {
-    steps {
-        sh '''
-        LATEST_WAR=$(ls -t target/*.war | head -1)
-        sudo cp "$LATEST_WAR" target/app.war
-        '''
-    }
-}
        stage('Build Docker Image') {
     steps {
-        sh 'sudo docker build -t my-app .'
+        sh 'docker build -t my-repo .'
          }
     }
         
-        stage('Run Container') {
+        stage('Push and pull the image to the ECR and run the Container') {
             steps {
                 sh '''
+                # Authenticate Docker to ECR
+                aws ecr get-login-password --region us-east-1 \
+                  | docker login --username AWS --password-stdin 401238232373.dkr.ecr.us-east-1.amazonaws.com
+
                 # Stop and remove old container if exists
-                sudo docker rm -f my-app-container || true
+                docker rm -f my-app-container || true
+
+                # Tag image with ECR repo path
+                docker tag my-repo:latest 401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
+
+                # Push image to ECR
+                docker push 401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
+
+                # Pull image back from ECR
+                docker pull 401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
 
                 # Run new container
-               sudo docker run -d -p 8081:8080 --name my-app-container my-app
+                docker run -d -p 8081:8080 --name my-tomcat-app-container \
+                  401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
                 '''
             }
         }
