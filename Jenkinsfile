@@ -24,9 +24,6 @@ pipeline {
         stage('Push and pull the image to the ECR and run the Container') {
             steps {
                 sh '''
-                # Authenticate Docker to ECR
-                aws ecr get-login-password --region us-east-1 \
-                  | docker login --username AWS --password-stdin 401238232373.dkr.ecr.us-east-1.amazonaws.com
 
                 # Stop and remove old container if exists
                 docker rm -f my-app-container || true
@@ -41,7 +38,7 @@ pipeline {
                 docker pull 401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
 
                 # Run new container
-                docker run -d -p 8082:8080 --name my-tomcat-app-container2 \
+                docker run -d -p 8082:8080 --name my-tomcat-app-container3 \
                   401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
                 '''
             }
