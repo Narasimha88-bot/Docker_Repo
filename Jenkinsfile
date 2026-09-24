@@ -41,7 +41,7 @@ pipeline {
                 docker pull 401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
 
                 # Run new container
-                docker run -d -p 8081:8080 --name my-tomcat-app-container \
+                docker run -d -p 8082:8080 --name my-tomcat-app-container2 \
                   401238232373.dkr.ecr.us-east-1.amazonaws.com/sample/my-repo:latest
                 '''
             }
